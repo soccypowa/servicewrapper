@@ -1,30 +1,64 @@
 name: Build
 
 on:
-    push:
-        branches: [main]
-    pull_request:
-        branches: [main]
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: read
 
 jobs:
-    build:
-        runs-on: windows-latest
+  build:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        goarch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
 
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
 
-            - name: Set up Go
-              uses: actions/setup-go@v5
-              with:
-                  go-version-file: "go.mod"
-                  cache: true
+      - name: Vet
+        run: go vet ./...
 
-            - name: Build
-              run: make build
+      - name: Build
+        shell: bash
+        env:
+          GOOS: windows
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          mkdir -p build
+          GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o build/servicewrapper-windows-${{ matrix.goarch }}.exe servicewrapper.go
 
-            - name: Upload artifact
-              uses: actions/upload-artifact@v4
-              with:
-                  name: servicewrapper-win
-                  path: build/servicewrapper.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: servicewrapper-windows-${{ matrix.goarch }}
+          path: build/servicewrapper-windows-${{ matrix.goarch }}.exe
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: service-wrapper-windows-*
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: sha256sum servicewrapper-windows-*.exe > checksums.txt
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            servicewrapper-windows-*.exe
+            checksum.txt
+          generate_release_notes: true
