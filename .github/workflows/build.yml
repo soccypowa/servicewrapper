@@ -36,7 +36,7 @@ jobs:
           mkdir -p build
           GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o build/servicewrapper-windows-${{ matrix.goarch }}.exe servicewrapper.go
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: servicewrapper-windows-${{ matrix.goarch }}
           path: build/servicewrapper-windows-${{ matrix.goarch }}.exe
