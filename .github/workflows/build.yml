@@ -50,7 +50,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v8
         with:
-          pattern: service-wrapper-windows-*
+          pattern: servicewrapper-windows-*
           merge-multiple: true
 
       - name: Generate checksums
