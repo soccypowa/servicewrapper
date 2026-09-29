@@ -34,7 +34,7 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
         run: |
           mkdir -p build
-          GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o build/servicewrapper-windows-${{ matrix.goarch }}.exe servicewrapper.go
+          GOOS=windows GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags "-s -w" -o build/servicewrapper-windows-${{ matrix.goarch }}.exe servicewrapper.go
 
       - uses: actions/upload-artifact@v7
         with:
@@ -60,5 +60,5 @@ jobs:
         with:
           files: |
             servicewrapper-windows-*.exe
-            checksum.txt
+            checksums.txt
           generate_release_notes: true
