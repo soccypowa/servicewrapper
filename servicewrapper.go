@@ -17,6 +17,23 @@ const (
 	LOG_DIR = `C:\Logs`
 )
 
+var (
+	Version   = "dev"
+	GitCommit = ""
+	BuildTime = ""
+)
+
+func versionInfo() string {
+	parts := []string{"servicewrapper " + Version}
+	if GitCommit != "" {
+		parts = append(parts, "commit "+GitCommit)
+	}
+	if BuildTime != "" {
+		parts = append(parts, "built "+BuildTime)
+	}
+	return strings.Join(parts, ", ")
+}
+
 type serviceWrapper struct {
 	executable string
 	execArgs   []string
@@ -40,13 +57,13 @@ func (s *serviceWrapper) Execute(args []string, r <-chan svc.ChangeRequest, chan
 	cmd.Stderr = s.logger.Writer()
 
 	if err := cmd.Start(); err != nil {
-		elog.Error(1000, fmt.Sprintf("Failed to start service %s: %v", s.svcName, err))
+		elog.Error(1000, fmt.Sprintf("Failed to start service %s: %v (%s)", s.svcName, err, versionInfo()))
 		return false, 1
 	}
 
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 
-	elog.Info(1000, fmt.Sprintf("%v started successfully.", s.svcName))
+	elog.Info(1000, fmt.Sprintf("%v started successfully. (%s)", s.svcName, versionInfo()))
 
 	go func() {
 		if err := cmd.Wait(); err != nil {
@@ -66,7 +83,7 @@ func (s *serviceWrapper) Execute(args []string, r <-chan svc.ChangeRequest, chan
 					//TODO: Could we do this a little nicer?
 					elog.Error(1000, fmt.Sprintf("Failed to kill service: %s with error: %v", s.svcName, err))
 				}
-				elog.Info(1000, fmt.Sprintf("%v stoped successfully.", s.svcName))
+				elog.Info(1000, fmt.Sprintf("%v stoped successfully. (%s)", s.svcName, versionInfo()))
 				return false, 0
 			default:
 				elog.Info(1000, fmt.Sprintf("Unexpected control request to service: %s request: %v", s.svcName, c))
@@ -76,6 +93,10 @@ func (s *serviceWrapper) Execute(args []string, r <-chan svc.ChangeRequest, chan
 }
 
 func main() {
+	if len(os.Args) == 2 && (os.Args[1] == "-version" || os.Args[1] == "--version") {
+		fmt.Println(versionInfo())
+		return
+	}
 	if len(os.Args) < 2 {
 		log.Fatalf("Usage: %s <executable> [args...]", os.Args[0])
 	}

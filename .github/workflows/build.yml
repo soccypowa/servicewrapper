@@ -32,14 +32,21 @@ jobs:
         env:
           GOOS: windows
           GOARCH: ${{ matrix.goarch }}
+          VERSION: ${{ github.ref_type == 'tag' && github.ref_name || 'dev' }}
+          GIT_COMMIT: ${{ github.sha }}
         run: |
           mkdir -p build
-          GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o build/servicewrapper-windows-${{ matrix.goarch }}.exe servicewrapper.go
+          go build -trimpath -ldflags "-s -w -X main.Version=$(VERSION) -X main.GitCommit=$(GIT_COMMIT)" -o build/servicewrapper.exe servicewrapper.go
+
+      - name: Package
+        shell: pwsh
+        run: |
+          Compress-Archive -Path build/servicewrapper.exe -DestinationPath build/servicewrapper-windows-${{ matrix.goarch }}.zip
 
       - uses: actions/upload-artifact@v7
         with:
           name: servicewrapper-windows-${{ matrix.goarch }}
-          path: build/servicewrapper-windows-${{ matrix.goarch }}.exe
+          path: build/servicewrapper-windows-${{ matrix.goarch }}.zip
 
   release:
     needs: build
@@ -54,11 +61,11 @@ jobs:
           merge-multiple: true
 
       - name: Generate checksums
-        run: sha256sum servicewrapper-windows-*.exe > checksums.txt
+        run: sha256sum servicewrapper-windows-*.zip > checksums.txt
 
       - uses: softprops/action-gh-release@v3
         with:
           files: |
-            servicewrapper-windows-*.exe
-            checksum.txt
+            servicewrapper-windows-*.zip
+            checksums.txt
           generate_release_notes: true
