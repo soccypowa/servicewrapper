@@ -11,7 +11,7 @@ build: $(TARGETS)
 $(TARGETS):
 	$(eval GOOS := $(word 1,$(subst /, ,$@)))
 	$(eval GOARCH := $(word 2,$(subst /, ,$@)))
-	@GOOS=$(GOOS) GOARCH=$(GOARCH) go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME) -X main.GitCommit=$(GIT_COMMIT)" -o ./build/servicewrapper.$(GOOS).$(GOARCH).exe servicewrapper.go
+	@GOOS=$(GOOS) GOARCH=$(GOARCH) go build -ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME) -X main.GitCommit=$(GIT_COMMIT)" -o ./build/$(GOOS).$(GOARCH)/servicewrapper.exe servicewrapper.go
 
 clean:
 	@rm -rf build
