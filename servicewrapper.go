@@ -93,12 +93,15 @@ func (s *serviceWrapper) Execute(args []string, r <-chan svc.ChangeRequest, chan
 }
 
 func main() {
-	if len(os.Args) == 2 && (os.Args[1] == "-version" || os.Args[1] == "--version") {
+	if len(os.Args) == 2 && (os.Args[1] == "-version") {
 		fmt.Println(versionInfo())
 		return
 	}
 	if len(os.Args) < 2 {
-		log.Fatalf("Usage: %s <executable> [args...]", os.Args[0])
+		fmt.Fprintln(os.Stderr, "Usage:")
+		fmt.Fprintln(os.Stderr, `  servicewrapper.exe <executable> [args...]`)
+		fmt.Fprintln(os.Stderr, `  servicewrapper.exe -version`)
+		os.Exit(1)
 	}
 	//TODO: we should definetly check that we are running as a service
 	isService, err := svc.IsWindowsService()
