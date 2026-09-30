@@ -71,25 +71,23 @@ func (s *serviceWrapper) Execute(args []string, r <-chan svc.ChangeRequest, chan
 		}
 	}()
 
-	for {
-		select {
-		case c := <-r:
-			switch c.Cmd {
-			case svc.Interrogate:
-				changes <- c.CurrentStatus
-			case svc.Stop, svc.Shutdown:
-				changes <- svc.Status{State: svc.StopPending}
-				if err := cmd.Process.Kill(); err != nil {
-					//TODO: Could we do this a little nicer?
-					elog.Error(1000, fmt.Sprintf("Failed to kill service: %s with error: %v", s.svcName, err))
-				}
-				elog.Info(1000, fmt.Sprintf("%v stoped successfully. (%s)", s.svcName, versionInfo()))
-				return false, 0
-			default:
-				elog.Info(1000, fmt.Sprintf("Unexpected control request to service: %s request: %v", s.svcName, c))
+	for c := range r {
+		switch c.Cmd {
+		case svc.Interrogate:
+			changes <- c.CurrentStatus
+		case svc.Stop, svc.Shutdown:
+			changes <- svc.Status{State: svc.StopPending}
+			if err := cmd.Process.Kill(); err != nil {
+				//TODO: Could we do this a little nicer?
+				elog.Error(1000, fmt.Sprintf("Failed to kill service: %s with error: %v", s.svcName, err))
 			}
+			elog.Info(1000, fmt.Sprintf("%v stoped successfully. (%s)", s.svcName, versionInfo()))
+			return false, 0
+		default:
+			elog.Info(1000, fmt.Sprintf("Unexpected control request to service: %s request: %v", s.svcName, c))
 		}
 	}
+	return false, 0
 }
 
 func main() {
